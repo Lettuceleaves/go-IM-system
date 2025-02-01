@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -24,8 +25,8 @@ func NewServer(ip string, port int) (server *Server) {
 	return
 }
 
-func (server *Server) BroadCast(User *User, msg string) {
-	server.Messege <- fmt.Sprintf("[%s]: %s", User.Name, msg)
+func (server *Server) BroadCast(user *User, msg string) {
+	server.Messege <- fmt.Sprintf("[%s]: %s", user.Name, msg)
 }
 
 func (server *Server) ListenMessage() {
@@ -41,12 +42,38 @@ func (server *Server) ListenMessage() {
 
 func (server *Server) Handle(Conn net.Conn) {
 	defer Conn.Close()
-	User := NewUser(Conn)
-	server.maplock.Lock()
-	server.UserTable[User.Name] = User
-	server.maplock.Unlock()
-	server.BroadCast(User, fmt.Sprintf("用户 %s 已上线", User.Name))
-	select {}
+	user := NewUser(Conn, server)
+	user.Online()
+	exit := make(chan bool)
+	watchdog := make(chan bool)
+	go func() {
+		buffer := make([]byte, 1024)
+		for {
+			n, err := Conn.Read(buffer)
+			if n == 0 {
+				user.Offline(exit)
+				return
+			}
+			if err != nil {
+				fmt.Println("Conn.Read error:", err)
+				exit <- true
+				return
+			}
+			msg := string(buffer[:n-1])
+			user.SendMsg(msg)
+			watchdog <- true
+		}
+	}()
+	for {
+		select {
+		case <-watchdog:
+		case <-time.After(10 * time.Second):
+			user.SendMsgToUser("您已超时，即将下线")
+			user.Offline(exit)
+		case <-exit:
+			return
+		}
+	}
 }
 
 func (server *Server) Start() {
@@ -60,7 +87,7 @@ func (server *Server) Start() {
 	for {
 		Conn, err := Listener.Accept()
 		if err != nil {
-			fmt.Println(".", err)
+			fmt.Println("Listener.Accept error:", err)
 			continue
 		}
 		go server.Handle(Conn)
