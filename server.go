@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"sync"
@@ -23,6 +24,13 @@ func NewServer(ip string, port int) (server *Server) {
 		Messege:   make(chan string),
 	}
 	return
+}
+
+var limitTime int64 = 60
+
+func init() {
+	flag.Int64Var(&limitTime, "l", 60, "设置超时时间, 默认是60秒")
+	flag.Parse()
 }
 
 func (server *Server) BroadCast(user *User, msg string) {
@@ -67,7 +75,7 @@ func (server *Server) Handle(Conn net.Conn) {
 	for {
 		select {
 		case <-watchdog:
-		case <-time.After(10 * time.Second):
+		case <-time.After(time.Duration(limitTime) * time.Second):
 			user.SendMsgToUser("您已超时，即将下线")
 			user.Offline(exit)
 		case <-exit:

@@ -63,12 +63,14 @@ func (user *User) SendMsg(msg string) {
 			target := user.server.UserTable[submsgs[1]]
 			target.SendMsgToUser(fmt.Sprintf("私聊[%s]:%s", user.Name, strings.Join(submsgs[2:], " ")))
 		} else {
-			user.SendMsgToUser("用户不存在")
+			user.SendMsgToUser("用户 " + submsgs[1] + " 不存在")
 		}
 	} else if submsgs[0] == "私聊" && len(submsgs) == 2 {
 		user.SendMsgToUser("私聊信息不能为空")
-	} else {
+	} else if submsgs[0] == "广播" && len(submsgs) >= 2 {
 		user.server.BroadCast(user, msg)
+	} else {
+		user.SendMsgToUser("服务器错误，消息模式无法识别")
 	}
 }
 
