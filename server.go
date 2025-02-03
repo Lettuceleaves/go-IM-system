@@ -67,7 +67,7 @@ func (server *Server) Handle(Conn net.Conn) {
 				exit <- true
 				return
 			}
-			msg := string(buffer[:n-1])
+			msg := string(buffer[:n])
 			user.SendMsg(msg)
 			watchdog <- true
 		}

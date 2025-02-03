@@ -58,7 +58,10 @@ func (client *Client) ClientI(exit chan bool) {
 		}
 		lineBytes, isPrefix, err := reader.ReadLine()
 		input := string(lineBytes)
-		if err == nil && isPrefix {
+		if err != nil || isPrefix {
+			if isPrefix {
+				fmt.Println("PROFIC")
+			}
 			fmt.Println("输入过长，请重新输入")
 			continue
 		}
@@ -97,7 +100,7 @@ func (client *Client) ClientO(exit chan bool) {
 			exit <- true
 			return
 		}
-		fmt.Println(string(buffer[:n-1]))
+		fmt.Println(string(buffer[:n]))
 	}
 }
 

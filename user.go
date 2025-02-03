@@ -61,7 +61,7 @@ func (user *User) SendMsg(msg string) {
 	} else if submsgs[0] == "私聊" && len(submsgs) >= 3 {
 		if _, ok := user.server.UserTable[submsgs[1]]; ok {
 			target := user.server.UserTable[submsgs[1]]
-			target.SendMsgToUser(fmt.Sprintf("私聊[%s]:%s", user.Name, strings.Join(submsgs[2:], " ")))
+			target.SendMsgToUser(fmt.Sprintf("私聊[%s]:%s", user.Name, msg))
 		} else {
 			user.SendMsgToUser("用户 " + submsgs[1] + " 不存在")
 		}
@@ -90,6 +90,6 @@ func NewUser(conn net.Conn, server *Server) (user *User) {
 func (user *User) ListenMessage() {
 	for {
 		msg := <-user.C
-		user.conn.Write([]byte(msg + "\n"))
+		user.conn.Write([]byte(msg))
 	}
 }
